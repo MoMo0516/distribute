@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>보안국 분배 계산기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --bg:#0D1219; --surface:#151D28; --raised:#1B2533; --line:#27313F;
+    --ink:#E7EDF5; --muted:#8D9BAD;
+    --accent:#E0A340; --accent-ink:#1A1206; --accent-soft:#2A2113;
+    --ok:#46B07C; --ok-soft:#122A20;
+    --bad:#E0645C; --bad-soft:#2C1917;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 16px 40px rgba(0,0,0,.42);
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --bg:#EAEEF3; --surface:#FFFFFF; --raised:#F3F6FA; --line:#D7DFE9;
+      --ink:#0F1821; --muted:#5A6675;
+      --accent:#8F5D12; --accent-ink:#FFFFFF; --accent-soft:#FBF1DF;
+      --ok:#1B7A4C; --ok-soft:#E8F5EE; --bad:#B0342E; --bad-soft:#FBEAE8;
+      --shadow:0 1px 2px rgba(15,24,33,.05), 0 12px 32px rgba(15,24,33,.09);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#EAEEF3; --surface:#FFFFFF; --raised:#F3F6FA; --line:#D7DFE9;
+    --ink:#0F1821; --muted:#5A6675;
+    --accent:#8F5D12; --accent-ink:#FFFFFF; --accent-soft:#FBF1DF;
+    --ok:#1B7A4C; --ok-soft:#E8F5EE; --bad:#B0342E; --bad-soft:#FBEAE8;
+    --shadow:0 1px 2px rgba(15,24,33,.05), 0 12px 32px rgba(15,24,33,.09);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+       -webkit-font-smoothing:antialiased;font-size:15px;line-height:1.5}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+  button{font-family:inherit;cursor:pointer;border:1px solid var(--line);border-radius:9px;
+         background:var(--raised);color:var(--ink);transition:background .12s,border-color .12s,color .12s}
+  button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+  .top{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+  .topin{max-width:900px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .brand .k{font-size:10.5px;letter-spacing:.16em;color:var(--accent);font-weight:600}
+  .brand h1{margin:0;font-size:19px;font-weight:700;letter-spacing:-.02em}
+  .btn{padding:9px 15px;font-size:13.5px;font-weight:600}
+  .btn.ghost{color:var(--muted);margin-left:auto}
+
+  .page{max-width:900px;margin:0 auto;padding:20px 20px 60px;display:flex;flex-direction:column;gap:16px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+        box-shadow:var(--shadow);overflow:hidden}
+  .card h2{margin:0;padding:13px 16px;font-size:13px;font-weight:700;letter-spacing:.04em;
+           color:var(--muted);border-bottom:1px solid var(--line);background:var(--raised);
+           display:flex;align-items:center;gap:9px}
+  .card h2 .n{margin-left:auto;font-size:12px;font-weight:600;color:var(--accent);
+              padding:2px 9px;border:1px solid var(--accent);border-radius:999px}
+
+  .rps{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:14px 16px}
+  @media (max-width:620px){ .rps{grid-template-columns:1fr} }
+  .rp{padding:12px 11px;text-align:left;border-radius:11px}
+  .rp .t{font-size:15px;font-weight:700;display:block}
+  .rp .d{display:block;font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.5;
+         white-space:pre-line;
+         font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+  .rp[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .rp[aria-pressed="true"] .d{color:var(--accent-ink);opacity:.82}
+  .pub{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;font-size:10px;
+       font-weight:700;border:1px solid currentColor;vertical-align:2px}
+
+  .nums{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;padding:14px 16px}
+  @media (max-width:620px){ .nums{grid-template-columns:1fr} }
+  .nm{display:flex;flex-direction:column;gap:6px}
+  .nm label{font-size:12.5px;color:var(--muted);font-weight:600}
+  .nm label .v{color:var(--accent);font-family:"IBM Plex Mono",monospace}
+  .nm .row{display:flex;gap:6px}
+  .nm input{flex:1;min-width:0;padding:9px 11px;font-size:17px;text-align:center;font-weight:600;
+            font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;
+            background:var(--raised);color:var(--ink);border:1px solid var(--line);border-radius:9px}
+  .nm .st{flex:none;width:34px;font-size:15px;font-weight:700;color:var(--muted)}
+  .nm .st:hover{color:var(--accent);border-color:var(--accent)}
+
+  .out{padding:18px 16px;background:var(--raised)}
+  .out .lb{font-size:11.5px;letter-spacing:.06em;color:var(--ok);font-weight:700}
+  .out .big{font-size:34px;font-weight:700;letter-spacing:-.02em;color:var(--ok);margin-top:2px;
+            font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;line-height:1.15}
+  dl.split{margin:15px 0 0;padding:14px 0 0;border-top:1px solid var(--line);
+           display:grid;grid-template-columns:auto 1fr;gap:9px 12px;font-size:14.5px}
+  dl.split dt{color:var(--muted);font-weight:600}
+  dl.split dt::after{content:' -'}
+  dl.split dd{margin:0;text-align:right;font-weight:600;
+              font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+  dl.split dd .m{display:block;font-weight:400;font-size:11.5px;color:var(--muted);margin-top:1px}
+
+  .formula{padding:14px 16px;border-bottom:1px solid var(--line);background:var(--accent-soft);
+           color:var(--accent);font-size:14px;font-weight:600;text-align:center;
+           font-family:"IBM Plex Mono",monospace}
+  .steps{display:flex;flex-direction:column}
+  .step{display:flex;gap:11px;align-items:flex-start;padding:11px 16px;border-top:1px solid var(--line)}
+  .step:first-child{border-top:0}
+  .step .no{flex:none;width:22px;height:22px;border-radius:7px;display:grid;place-items:center;
+            background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:700;margin-top:2px}
+  .step .tx{flex:1;font-size:13.5px;line-height:1.65;
+            font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;word-break:break-word}
+  .step .tx b{color:var(--ok)}
+  .copywrap{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line);background:var(--raised)}
+  .copywrap button{flex:1;padding:11px;font-size:13.5px;font-weight:700}
+  .copywrap .main{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .copywrap button.done{background:var(--ok);border-color:var(--ok);color:#fff}
+  .copywrap button.fail{background:transparent;border-color:var(--bad);color:var(--bad)}
+
+  .hint{padding:11px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);line-height:1.6}
+  .foot{max-width:900px;margin:0 auto;padding:0 20px 40px;font-size:12px;color:var(--muted);text-align:center}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="topin">
+    <div class="brand">
+      <span class="k">GTA FIVEM · 시그널 서버</span>
+      <h1>보안국 분배 계산기</h1>
+    </div>
+    <button class="btn ghost" id="reset">초기화</button>
+  </div>
+</header>
+
+<div class="page">
+
+  <section class="card">
+    <h2>RP 종류 <span class="n" id="fbTag">—</span></h2>
+    <div class="rps" id="rps"></div>
+  </section>
+
+  <section class="card">
+    <h2>참여 인원</h2>
+    <div class="nums">
+      <div class="nm">
+        <label for="C">강도 참여 인원 <span class="v">C</span></label>
+        <div class="row">
+          <button class="st" data-t="C" data-d="-1" title="1명 감소">−</button>
+          <input type="number" id="C" value="1" min="1" max="99" step="1" inputmode="numeric">
+          <button class="st" data-t="C" data-d="1" title="1명 증가">+</button>
+        </div>
+      </div>
+      <div class="nm">
+        <label for="P">경찰 참여 인원 <span class="v">P</span></label>
+        <div class="row">
+          <button class="st" data-t="P" data-d="-1" title="1명 감소">−</button>
+          <input type="number" id="P" value="1" min="0" max="99" step="1" inputmode="numeric">
+          <button class="st" data-t="P" data-d="1" title="1명 증가">+</button>
+        </div>
+      </div>
+      <div class="nm">
+        <label for="S">보안국 참여 인원 <span class="v">S</span></label>
+        <div class="row">
+          <button class="st" data-t="S" data-d="-1" title="1명 감소">−</button>
+          <input type="number" id="S" value="1" min="0" max="99" step="1" inputmode="numeric">
+          <button class="st" data-t="S" data-d="1" title="1명 증가">+</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>보안국에 보낼 금액</h2>
+    <div class="out">
+      <div class="lb">보안국 <span id="sN">1</span>명분 송금액</div>
+      <div class="big" id="sendV">—</div>
+      <dl class="split" id="split"></dl>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>계산식</h2>
+    <div class="formula">1인당 지급액 = C × (F + B) ÷ (P + S)</div>
+    <div class="steps" id="steps"></div>
+    <div class="copywrap">
+      <button class="main" id="copyAll">계산식 전체 복사</button>
+      <button id="copySend">송금액만 복사</button>
+    </div>
+    <div class="hint">C = 강도 참여 인원 · P = 경찰 참여 인원 · S = 보안국 참여 인원 · F = 강도 1인당 벌금 · B = 강도 1인당 보석금</div>
+  </section>
+
+</div>
+
+<p class="foot">보석금은 구금 1분 = 100만원으로 환산한 금액입니다 · 제작 · 부기</p>
+
+<script>
+var RPS = [
+  { key:'jewel', name:'보석상 RP',   f:5000,  m:20 },
+  { key:'bank',  name:'중앙은행 RP', f:15000, m:30 },
+  { key:'wrnt',  name:'영장 RP',     f:30000, m:30, pub:true }
+];
+var cur = RPS[0];
+
+function $(id){ return document.getElementById(id); }
+function el(t, c, x){ var n = document.createElement(t); if (c) n.className = c; if (x != null) n.textContent = x; return n; }
+function bailOf(r){ return r.m * 100; }
+
+function won(n){
+  n = Math.round(n);
+  if (n >= 10000){
+    var e = Math.floor(n / 10000), rest = n % 10000;
+    return e + '억' + (rest ? ' ' + rest.toLocaleString() + '만원' : '');
+  }
+  return n.toLocaleString() + '만원';
+}
+function num(id, min){
+  var v = parseInt($(id).value, 10);
+  if (isNaN(v) || v < min) v = min;
+  if (v > 99) v = 99;
+  return v;
+}
+
+function buildRps(){
+  var host = $('rps');
+  RPS.forEach(function(r){
+    var b = el('button', 'rp');
+    b.dataset.key = r.key;
+    b.setAttribute('aria-pressed', 'false');
+    var t = el('span', 't', r.name);
+    if (r.pub){ var p = el('span', 'pub', '공금'); t.appendChild(p); }
+    b.appendChild(t);
+    b.appendChild(el('span', 'd', '벌금 ' + won(r.f) + ' + 보석금 ' + won(bailOf(r)) + '\n= ' + won(r.f + bailOf(r))));
+    b.addEventListener('click', function(){ cur = r; render(); });
+    host.appendChild(b);
+  });
+}
+
+function calc(){
+  var C = num('C', 1), P = num('P', 0), S = num('S', 0);
+  var F = cur.f, B = bailOf(cur), FB = F + B;
+  var total = C * FB;
+  var head = P + S;
+  var per = head > 0 ? total / head : 0;
+  return { C:C, P:P, S:S, F:F, B:B, FB:FB, total:total, head:head, per:per,
+           send:per * S, police:per * P };
+}
+
+function lines(c){
+  return [
+    '[보안국 분배 정산 · ' + cur.name + ']',
+    '1. 강도 ' + c.C + '명 × (벌금 ' + won(c.F) + ' + 보석금 ' + won(c.B) + ' = ' + won(c.FB) + ') = 총 ' + won(c.total),
+    '2. ' + won(c.total) + ' ÷ 참여 ' + c.head + '명 (경찰 ' + c.P + ' + 보안국 ' + c.S + ') = 1인당 ' + won(c.per),
+    '3. 1인당 ' + won(c.per) + ' × 보안국 ' + c.S + '명 = ' + won(c.send) + ' 송금',
+    '→ 보안국 ' + c.S + '명 : ' + won(c.send) + ' / 경찰 ' + c.P + '명 : ' + won(c.police)
+  ];
+}
+
+function render(){
+  document.querySelectorAll('[data-key]').forEach(function(b){
+    b.setAttribute('aria-pressed', b.dataset.key === cur.key ? 'true' : 'false');
+  });
+  var c = calc();
+  $('fbTag').textContent = 'F + B = ' + won(c.FB);
+  $('sN').textContent = c.S;
+
+  if (c.head === 0){
+    $('sendV').textContent = '—';
+    $('split').innerHTML = '';
+    $('steps').innerHTML = '';
+    var w = el('div', 'step');
+    w.appendChild(el('span', 'no', '!'));
+    w.appendChild(el('div', 'tx', '경찰 · 보안국 인원을 1명 이상 입력하세요.'));
+    $('steps').appendChild(w);
+    return;
+  }
+
+  $('sendV').textContent = won(c.send);
+
+  var sp = $('split');
+  sp.innerHTML = '';
+  function row(k, v, m){
+    sp.appendChild(el('dt', null, k));
+    var d = el('dd', null, v);
+    if (m) d.appendChild(el('span', 'm', m));
+    sp.appendChild(d);
+  }
+  row('총 수입', won(c.total), won(c.FB) + ' × 강도 ' + c.C + '명');
+  row('1인당 지급액', won(c.per), '÷ 참여 ' + c.head + '명 (경찰 ' + c.P + ' + 보안국 ' + c.S + ')');
+  row('보안국 몫', won(c.send), c.S + '명');
+  row('경찰 몫', won(c.police), c.P + '명');
+
+  var st = $('steps');
+  st.innerHTML = '';
+  lines(c).slice(1, 4).forEach(function(t, i){
+    var row2 = el('div', 'step');
+    row2.appendChild(el('span', 'no', String(i + 1)));
+    row2.appendChild(el('div', 'tx', t.replace(/^\d\.\s/, '')));
+    st.appendChild(row2);
+  });
+}
+
+/* 복사 */
+function legacyCopy(text){
+  var ta = document.createElement('textarea');
+  ta.value = text; ta.setAttribute('readonly','');
+  ta.style.position = 'fixed'; ta.style.top = '-1000px';
+  document.body.appendChild(ta);
+  ta.select(); ta.setSelectionRange(0, text.length);
+  var ok = false;
+  try { ok = document.execCommand('copy'); } catch(e){ ok = false; }
+  document.body.removeChild(ta);
+  return ok;
+}
+function flash(btn, cls, label){
+  btn.classList.remove('done','fail');
+  if (cls) btn.classList.add(cls);
+  btn.textContent = label;
+  clearTimeout(btn._t);
+  btn._t = setTimeout(function(){
+    btn.classList.remove('done','fail');
+    btn.textContent = btn._base;
+  }, 1500);
+}
+function copyText(text, btn){
+  function ok(){ flash(btn, 'done', '복사됨'); }
+  function no(){ flash(btn, 'fail', '복사 실패'); }
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(ok, function(){ legacyCopy(text) ? ok() : no(); });
+  } else { legacyCopy(text) ? ok() : no(); }
+}
+
+['C','P','S'].forEach(function(id){
+  $(id).addEventListener('input', render);
+  $(id).addEventListener('blur', function(){
+    var min = id === 'C' ? 1 : 0;
+    if (this.value === '' || parseInt(this.value, 10) < min) this.value = min;
+    render();
+  });
+});
+document.querySelectorAll('.st').forEach(function(b){
+  b.addEventListener('click', function(){
+    var id = b.dataset.t, d = parseInt(b.dataset.d, 10), min = id === 'C' ? 1 : 0;
+    $(id).value = Math.max(min, Math.min(99, num(id, min) + d));
+    render();
+  });
+});
+$('reset').addEventListener('click', function(){
+  cur = RPS[0]; $('C').value = 1; $('P').value = 1; $('S').value = 1; render();
+});
+$('copyAll').addEventListener('click', function(){
+  var c = calc();
+  if (c.head === 0) return;
+  copyText(lines(c).join('\n'), this);
+});
+$('copySend').addEventListener('click', function(){
+  var c = calc();
+  if (c.head === 0) return;
+  copyText(won(c.send), this);
+});
+$('copyAll')._base = '계산식 전체 복사';
+$('copySend')._base = '송금액만 복사';
+
+buildRps();
+render();
+</script>
+</body>
+</html>
