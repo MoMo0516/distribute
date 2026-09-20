@@ -58,8 +58,8 @@
   .card h2 .n{margin-left:auto;font-size:12px;font-weight:600;color:var(--accent);
               padding:2px 9px;border:1px solid var(--accent);border-radius:999px}
 
-  .rps{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:14px 16px}
-  @media (max-width:620px){ .rps{grid-template-columns:1fr} }
+  .rps{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;padding:14px 16px}
+  @media (max-width:760px){ .rps{grid-template-columns:repeat(2,1fr)} }
   .rp{padding:12px 11px;text-align:left;border-radius:11px}
   .rp .t{font-size:15px;font-weight:700;display:block}
   .rp .d{display:block;font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.5;
@@ -192,6 +192,7 @@
 <script>
 var RPS = [
   { key:'jewel', name:'보석상 RP',   f:15000, m:15 },
+  { key:'casino',name:'카지노 RP',   f:20000, m:20 },
   { key:'bank',  name:'중앙은행 RP', f:30000, m:25 },
   { key:'wrnt',  name:'영장 RP',     f:30000, m:30, pub:true }
 ];
